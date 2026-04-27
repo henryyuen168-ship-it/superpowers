@@ -26,15 +26,22 @@ Task tool (general-purpose):
     | File Size | Would any new or modified file likely grow large enough to be hard to reason about as a whole? |
     | Task Syntax | Checkbox syntax (`- [ ]`) on steps for tracking |
     | Chunk Size | Each chunk under 1000 lines |
+    | Buildability | Could an engineer follow this chunk without getting stuck? |
 
     ## CRITICAL
 
     Look especially hard for:
     - Any TODO markers or placeholder text
     - Steps that say "similar to X" without actual content
+    - Steps that describe what to do without showing how when code is required
     - Incomplete task definitions
     - Missing verification steps or expected outputs
+    - References to types, functions, or methods not defined in any task
     - Files planned to hold multiple responsibilities or likely to grow unwieldy
+
+    ## Calibration
+
+    Flag issues that would cause real problems during implementation: missing spec coverage, contradictory steps, placeholder content, vague instructions, or task boundaries that make an implementer likely to build the wrong thing. Minor wording and stylistic preferences belong in recommendations, not blockers.
 
     ## Output Format
 
