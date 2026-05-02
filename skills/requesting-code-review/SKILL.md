@@ -5,101 +5,112 @@ description: Use when completing tasks, implementing major features, or before m
 
 # Requesting Code Review
 
-Dispatch superpowers:code-reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history. This keeps the reviewer focused on the work product, not your thought process, and preserves your own context for continued work.
+Use OpenClaw review passes to catch requirement gaps and code-quality issues before they compound.
 
-**Core principle:** Review early, review often.
+**Core principle:** review early, review often.
 
 ## When to Request Review
 
 **Mandatory:**
-- After each task in subagent-driven development
-- After completing major feature
-- Before merge to main
+- After each meaningful task in subagent-driven-development
+- After completing a major feature or risky refactor
+- Before merging or declaring work complete
 
 **Optional but valuable:**
-- When stuck (fresh perspective)
-- Before refactoring (baseline check)
-- After fixing complex bug
+- When stuck and you need a fresh technical pass
+- Before a large refactor
+- After fixing a subtle bug
 
-## How to Request
+## Review Order
 
-**1. Get git SHAs:**
+1. **Spec compliance review first** when a spec, task, or plan exists
+   - Use `spec-reviewer` to answer: did we build what was asked, nothing more, nothing less?
+2. **Code quality review second**
+   - Use an isolated reviewer session with only the task-local context, diff range, and requirements
+3. **Verification pass after fixes**
+   - Use `verification-before-completion` before claiming success
+
+This ordering matters. A beautiful implementation that misses the spec is still wrong.
+
+## What Context to Give the Reviewer
+
+Give the reviewer only what they need:
+- what was implemented
+- the requirements, spec, or plan reference
+- the git range or changed files
+- the verification commands and results so far
+- any known risks or open questions
+
+Do **not** dump your full session history into the review. Keep the reviewer focused on the work product.
+
+## Minimal Review Workflow
+
+### 1. Get the diff range
+
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+BASE_SHA=$(git rev-parse HEAD~1)   # or another appropriate base
 HEAD_SHA=$(git rev-parse HEAD)
+git diff --stat "$BASE_SHA".."$HEAD_SHA"
 ```
 
-**2. Dispatch code-reviewer subagent:**
+### 2. Run spec compliance review if applicable
 
-Use Task tool with superpowers:code-reviewer type, fill template at `code-reviewer.md`
+If the work came from a spec or plan, invoke `spec-reviewer` first.
 
-**Placeholders:**
-- `{WHAT_WAS_IMPLEMENTED}` - What you just built
-- `{PLAN_OR_REQUIREMENTS}` - What it should do
-- `{BASE_SHA}` - Starting commit
-- `{HEAD_SHA}` - Ending commit
-- `{DESCRIPTION}` - Brief summary
+### 3. Run code quality review in an isolated session
 
-**3. Act on feedback:**
-- Fix Critical issues immediately
-- Fix Important issues before proceeding
-- Note Minor issues for later
-- Push back if reviewer is wrong (with reasoning)
+Use `sessions_spawn` for a focused reviewer with:
+- the goal of reviewing the diff for code quality and risk
+- the requirement reference
+- the base and head SHAs
+- instructions to cite file/line issues and categorize severity
 
-## Example
+Template: `requesting-code-review/code-reviewer.md`
 
-```
-[Just completed Task 2: Add verification function]
+### 4. Act on the feedback
 
-You: Let me request code review before proceeding.
+- Fix critical issues immediately
+- Fix important issues before proceeding
+- Defer minor issues only deliberately
+- Push back when the reviewer is wrong, with evidence
 
-BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | awk '{print $1}')
-HEAD_SHA=$(git rev-parse HEAD)
+### 5. Re-verify
 
-[Dispatch superpowers:code-reviewer subagent]
-  WHAT_WAS_IMPLEMENTED: Verification and repair functions for conversation index
-  PLAN_OR_REQUIREMENTS: Task 2 from scratch/plans/deployment-plan.md
-  BASE_SHA: a7981ec
-  HEAD_SHA: 3df7661
-  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
+Before closing the work, run the smallest meaningful validation and use `verification-before-completion` discipline.
 
-[Subagent returns]:
-  Strengths: Clean architecture, real tests
-  Issues:
-    Important: Missing progress indicators
-    Minor: Magic number (100) for reporting interval
-  Assessment: Ready to proceed
+## Suggested OpenClaw Reviewer Prompt Shape
 
-You: [Fix progress indicators]
-[Continue to Task 3]
-```
+A good isolated reviewer prompt includes:
+- what changed
+- what the code was supposed to do
+- exact files or git range to inspect
+- constraints like `do not rewrite unrelated files`
+- required output sections: strengths, critical, important, minor, assessment
 
-## Integration with Workflows
+See `code-reviewer.md` for a reusable template.
 
-**Subagent-Driven Development:**
-- Review after EACH task
-- Catch issues before they compound
-- Fix before moving to next task
+## Integration with Other Skills
 
-**Executing Plans:**
-- Review after each batch (3 tasks)
-- Get feedback, apply, continue
+**Subagent-Driven Development**
+- review after each task
+- spec review first, then code quality review
 
-**Ad-Hoc Development:**
-- Review before merge
-- Review when stuck
+**Writing Plans / approved specs**
+- treat the plan as the source of truth for spec review
+
+**Verification Before Completion**
+- do not claim done until the fixes are verified
 
 ## Red Flags
 
-**Never:**
-- Skip review because "it's simple"
-- Ignore Critical issues
-- Proceed with unfixed Important issues
-- Argue with valid technical feedback
+Never:
+- skip review because the change feels simple
+- proceed with known unfixed important issues unless the owner explicitly accepts the risk
+- let the reviewer inherit noisy transcript context when a clean prompt would do
+- confuse spec review with code quality review
 
-**If reviewer wrong:**
-- Push back with technical reasoning
-- Show code/tests that prove it works
-- Request clarification
+## Bottom Line
 
-See template at: requesting-code-review/code-reviewer.md
+Request review as a structured gate, not a social ritual.
+
+Spec first. Quality second. Verification before completion.
