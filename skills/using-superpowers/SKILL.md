@@ -1,115 +1,142 @@
 ---
 name: using-superpowers
-description: Use when starting any conversation - establishes how to find and use skills, requiring Skill tool invocation before ANY response including clarifying questions
+description: Use when you need to discover which skills exist, understand how OpenClaw applies them, or choose the right skill before non-trivial work
 ---
 
-<SUBAGENT-STOP>
-If you were dispatched as a subagent to execute a specific task, skip this skill.
-</SUBAGENT-STOP>
+# Using Superpowers in OpenClaw
 
-<EXTREMELY-IMPORTANT>
-If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+## Overview
 
-IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+This skill is an OpenClaw-native guide to the skills system.
 
-This is not negotiable. This is not optional. You cannot rationalize your way out of this.
-</EXTREMELY-IMPORTANT>
+Use it when you need to:
+- find the right skill for a task
+- understand how skill invocation works in OpenClaw
+- browse the current installed skill inventory
+- translate a cross-platform Superpowers instruction into OpenClaw behavior
 
-## Instruction Priority
+Do **not** use this skill as a substitute for task-specific skills like debugging, planning, TDD, or code review. This guide routes you to the right skill; it does not replace the real workflow skill.
 
-Superpowers skills override default system prompt behavior, but **user instructions always take precedence**:
+## OpenClaw-first rule
 
-1. **User's explicit instructions** (CLAUDE.md, GEMINI.md, AGENTS.md, direct requests) — highest priority
-2. **Superpowers skills** — override default system behavior where they conflict
-3. **Default system prompt** — lowest priority
+OpenClaw already scans the available skills and system guidance before responding. You do **not** need to force a separate skill-discovery ritual before every message.
 
-If CLAUDE.md, GEMINI.md, or AGENTS.md says "don't use TDD" and a skill says "always use TDD," follow the user's instructions. The user is in control.
+Instead:
+1. If a specific skill clearly matches the task, use that skill.
+2. If you are unsure which skill fits, use this guide to choose.
+3. Prefer the **most specific** applicable skill over broad orientation material.
 
-## How to Access Skills
+## How OpenClaw uses skills
 
-**In Claude Code:** Use the `Skill` tool. When you invoke a skill, its content is loaded and presented to you—follow it directly. Never use the Read tool on skill files.
+- Skills are discovered from the installed skill set and selected based on the request.
+- In OpenClaw, the agent may read a skill file directly as part of the workflow.
+- Some other harnesses expose explicit skill activation tools; OpenClaw users should follow OpenClaw's local runtime behavior instead of copying foreign platform rituals.
 
-**In Gemini CLI:** Skills activate via the `activate_skill` tool. Gemini loads skill metadata at session start and activates the full content on demand.
+See `references/openclaw-tools.md` for tool mapping and `references/openclaw-skills-catalog.md` for the current skill inventory.
 
-**In other environments:** Check your platform's documentation for how skills are loaded.
+## Core workflow
 
-## Platform Adaptation
-
-Skills use Claude Code tool names. Non-CC platforms: see `references/codex-tools.md` (Codex) for tool equivalents. Gemini CLI users get the tool mapping loaded automatically via GEMINI.md.
-
-# Using Skills
-
-## The Rule
-
-**Invoke relevant or requested skills BEFORE any response or action.** Even a 1% chance a skill might apply means that you should invoke the skill to check. If an invoked skill turns out to be wrong for the situation, you don't need to use it.
+When deciding whether to use a skill:
 
 ```dot
-digraph skill_flow {
-    "User message received" [shape=doublecircle];
-    "About to EnterPlanMode?" [shape=doublecircle];
-    "Already brainstormed?" [shape=diamond];
-    "Invoke brainstorming skill" [shape=box];
-    "Might any skill apply?" [shape=diamond];
-    "Invoke Skill tool" [shape=box];
-    "Announce: 'Using [skill] to [purpose]'" [shape=box];
-    "Has checklist?" [shape=diamond];
-    "Create TodoWrite todo per item" [shape=box];
-    "Follow skill exactly" [shape=box];
-    "Respond (including clarifications)" [shape=doublecircle];
+digraph openclaw_skill_flow {
+    "Task arrives" [shape=doublecircle];
+    "Is there a specific matching skill?" [shape=diamond];
+    "Use that specific skill" [shape=box];
+    "Am I unsure which skill fits?" [shape=diamond];
+    "Use this guide / catalog" [shape=box];
+    "Proceed without this guide" [shape=box];
 
-    "About to EnterPlanMode?" -> "Already brainstormed?";
-    "Already brainstormed?" -> "Invoke brainstorming skill" [label="no"];
-    "Already brainstormed?" -> "Might any skill apply?" [label="yes"];
-    "Invoke brainstorming skill" -> "Might any skill apply?";
-
-    "User message received" -> "Might any skill apply?";
-    "Might any skill apply?" -> "Invoke Skill tool" [label="yes, even 1%"];
-    "Might any skill apply?" -> "Respond (including clarifications)" [label="definitely not"];
-    "Invoke Skill tool" -> "Announce: 'Using [skill] to [purpose]'";
-    "Announce: 'Using [skill] to [purpose]'" -> "Has checklist?";
-    "Has checklist?" -> "Create TodoWrite todo per item" [label="yes"];
-    "Has checklist?" -> "Follow skill exactly" [label="no"];
-    "Create TodoWrite todo per item" -> "Follow skill exactly";
+    "Task arrives" -> "Is there a specific matching skill?";
+    "Is there a specific matching skill?" -> "Use that specific skill" [label="yes"];
+    "Is there a specific matching skill?" -> "Am I unsure which skill fits?" [label="no / maybe"];
+    "Am I unsure which skill fits?" -> "Use this guide / catalog" [label="yes"];
+    "Am I unsure which skill fits?" -> "Proceed without this guide" [label="no"];
 }
 ```
 
-## Red Flags
+## Installed skill inventory
 
-These thoughts mean STOP—you're rationalizing:
+### Core installed engineering/process skills
+- `brainstorming`
+- `writing-plans`
+- `test-driven-development`
+- `systematic-debugging`
+- `verification-before-completion`
+- `subagent-driven-development`
 
-| Thought | Reality |
-|---------|---------|
-| "This is just a simple question" | Questions are tasks. Check for skills. |
-| "I need more context first" | Skill check comes BEFORE clarifying questions. |
-| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
-| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
-| "Let me gather information first" | Skills tell you HOW to gather information. |
-| "This doesn't need a formal skill" | If a skill exists, use it. |
-| "I remember this skill" | Skills evolve. Read current version. |
-| "This doesn't count as a task" | Action = task. Check for skills. |
-| "The skill is overkill" | Simple things become complex. Use it. |
-| "I'll just do this one thing first" | Check BEFORE doing anything. |
-| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
-| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
+### Additional OpenClaw-local skills already available
+- `brainstorm-lite`
+- `spec-reviewer`
+- `plan-writer`
+- `skill-creator`
+- other environment/domain-specific local skills
 
-## Skill Priority
+### Review / rollout candidates in the Superpowers lane
+- `requesting-code-review`
+- `receiving-code-review`
+- `dispatching-parallel-agents`
+- `writing-skills`
+- `using-superpowers` (this guide)
 
-When multiple skills could apply, use this order:
+### Deferred / conditional candidates
+- `executing-plans`
+- `finishing-a-development-branch`
 
-1. **Process skills first** (brainstorming, debugging) - these determine HOW to approach the task
-2. **Implementation skills second** (frontend-design, mcp-builder) - these guide execution
+### Skip-for-now candidates
+- `using-git-worktrees`
 
-"Let's build X" → brainstorming first, then implementation skills.
-"Fix this bug" → debugging first, then domain-specific skills.
+## When to use this guide
 
-## Skill Types
+Use this guide when:
+- you need a quick inventory of available skills
+- you need to understand which skill category fits the task
+- a Superpowers skill mentions Claude-native behavior and you need the OpenClaw equivalent
+- you are deciding whether a task should route to planning, debugging, TDD, review, or subagent execution
 
-**Rigid** (TDD, debugging): Follow exactly. Don't adapt away discipline.
+Do **not** use this guide when:
+- a specific skill already clearly matches the task
+- you are trying to avoid using a stricter workflow skill
+- you need implementation details rather than routing/discovery help
 
-**Flexible** (patterns): Adapt principles to context.
+## Priority rules
 
-The skill itself tells you which.
+When multiple skills could apply:
 
-## User Instructions
+1. Use the most specific skill.
+2. Use process-discipline skills before implementation habits.
+3. Use this guide only when the routing decision is unclear.
 
-Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.
+Examples:
+- "Fix this bug" → `systematic-debugging` first
+- "Implement this feature" → `brainstorming` or `brainstorm-lite`, then `writing-plans`, then execution skills
+- "Did we build the right thing?" → `spec-reviewer`
+- "Should I use a review skill or a planning skill here?" → this guide can help
+
+## Cross-platform note
+
+This adapted skill keeps secondary references for non-OpenClaw environments, but OpenClaw guidance is primary here.
+
+- OpenClaw mapping: `references/openclaw-tools.md`
+- Codex mapping: `references/codex-tools.md`
+- Gemini mapping: `references/gemini-tools.md`
+
+If a cross-platform reference conflicts with OpenClaw-specific instructions, follow the OpenClaw guidance.
+
+## Red flags
+
+These are signs you are using this guide incorrectly:
+
+- "I'm reading the catalog instead of using the actual debugging skill."
+- "I'm using orientation material to avoid TDD/review/debugging discipline."
+- "I already know the matching skill, but I'm stalling here anyway."
+- "I'm treating another platform's invocation ritual as mandatory in OpenClaw."
+
+## Success condition
+
+This guide is successful when it helps you quickly answer:
+- What skill should I use?
+- How does that map to OpenClaw behavior?
+- What is installed vs still in rollout?
+
+Then you should leave this guide and use the actual task-specific skill.
